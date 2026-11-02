@@ -16,5 +16,6 @@ npm-debug.log*
 # OS / Editor files
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
 .vscode/
 .idea/
