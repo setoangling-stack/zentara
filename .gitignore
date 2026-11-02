@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Database SQLite (lokal & dinamis)
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+database.sqlite
+
+# Backup & logs
+backup_old/
+*.log
+npm-debug.log*
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

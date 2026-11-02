@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zentara - Panel Admin & Akses Gmail</title>
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --accent: #ec4899;
+      --green: #10b981;
+      --green-dark: #059669;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Nunito', sans-serif; }
+    h1, h2, h3, .brand { font-family: 'Fredoka', cursive, sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .brand span {
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand img {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+    }
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-green { background: var(--green); color: #fff; }
+    .btn-green:hover { background: var(--green-dark); }
+    .btn-yellow { background: var(--yellow); color: #000; }
+    .btn-red { background: var(--red); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text); }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); }
+    .btn-sm { padding: 4px 10px; font-size: 0.8rem; border-radius: 6px; }
+
+    main {
+      flex: 1;
+      max-width: 1300px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card .val {
+      font-size: 2rem;
+      font-weight: 800;
+      font-family: 'Fredoka', sans-serif;
+      color: #fff;
+      margin-top: 4px;
+    }
+    .stat-card .lbl {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .stat-card.alert {
+      border-color: var(--yellow);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), var(--card-bg));
+    }
+    .stat-card.alert .val { color: var(--yellow); }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 14px;
+    }
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .badge-blue { background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .form-control {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 12px 14px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--card-border);
+    }
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.9rem;
+    }
+    tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 20px;
+    }
+    .modal {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .modal-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .hidden { display: none !important; }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e293b;
+      border: 1px solid var(--green);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      z-index: 1000;
+      animation: slideUp 0.3s forwards;
+    }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+  <!-- ADMIN LOGIN MODAL -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="modal">
+      <div style="text-align:center; font-size:3rem; margin-bottom:10px;">👑</div>
+      <h2 class="modal-title">Panel Admin Zentara</h2>
+      <p class="modal-desc">Masuk untuk mengelola akses akun guru & pengaturan game.</p>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label>Username</label>
+          <input type="text" id="adminUser" class="form-control" value="admin" required autofocus>
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Kata Sandi</label>
+          <input type="password" id="adminPass" class="form-control" placeholder="Kata sandi admin (bawaan: admin123)" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px;">Masuk ke Panel Admin</button>
+        <p id="loginError" style="color: var(--red); font-size: 0.85rem; margin-top: 10px; text-align: center;"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD -->
+  <header>
+    <div class="brand">
+      <img src="/icon-192.png" alt="Zentara">
+      <div>Zentara <span>Admin Panel</span></div>
+    </div>
+    <div class="top-actions">
+      <a href="/" target="_blank" class="btn btn-outline btn-sm">🎮 Buka Game</a>
+      <button onclick="refreshAll()" class="btn btn-outline btn-sm">🔄 Segarkan</button>
+      <button onclick="logoutAdmin()" class="btn btn-red btn-sm">Keluar</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="lbl">Total Guru Terdaftar</div>
+        <div class="val" id="stTotalGuru">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Guru Berstatus Aktif</div>
+        <div class="val" id="stGuruAktif" style="color: var(--green);">0</div>
+      </div>
+      <div class="stat-card alert" id="cardPending">
+        <div class="lbl">Menunggu Akses</div>
+        <div class="val" id="stGuruMenunggu">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Whitelist Akses Gmail</div>
+        <div class="val" id="stTotalAkses">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Total Kelas Aktif</div>
+        <div class="val" id="stTotalKelas">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Total Murid Bermain</div>
+        <div class="val" id="stTotalMurid">0</div>
+      </div>
+    </div>
+
+    <!-- BERI AKSES GMAIL FORM -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">✨ Berikan Akses Akun Baru via Gmail (Whitelist)</h2>
+      </div>
+      <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:16px;">
+        Masukkan alamat Gmail guru yang ingin diberikan izin akses. Guru yang terdaftar dengan Gmail ini akan <strong>otomatis langsung aktif</strong> tanpa perlu menunggu!
+      </p>
+      <form id="addAksesForm" onsubmit="handleAddAkses(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Alamat Email Gmail *</label>
+            <input type="email" id="inEmail" class="form-control" placeholder="contoh: guru.hebat@gmail.com" required>
+          </div>
+          <div class="form-group">
+            <label>Nama Guru / Pengguna</label>
+            <input type="text" id="inNama" class="form-control" placeholder="Nama Lengkap Guru (opsional)">
+          </div>
+          <div class="form-group">
+            <label>Masa Aktif Lisensi</label>
+            <select id="inDurasi" class="form-control">
+              <option value="seumur">Seumur Hidup (Lifetime)</option>
+              <option value="365" selected>1 Tahun (365 Hari)</option>
+              <option value="180">6 Bulan (180 Hari)</option>
+              <option value="90">3 Bulan (90 Hari)</option>
+              <option value="30">1 Bulan (30 Hari)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Batas Maksimal Kelas</label>
+            <input type="number" id="inMaksKelas" class="form-control" value="10" min="1" max="100">
+          </div>
+          <div class="form-group">
+            <label>Nomor Pesanan / Invoice</label>
+            <input type="text" id="inNoPesanan" class="form-control" placeholder="cth: INV-202611-001 / ORD-77">
+          </div>
+          <div class="form-group">
+            <label>Pemberi Lisensi</label>
+            <input type="text" id="inPemberi" class="form-control" placeholder="cth: Admin Pusat / Zentara" value="Admin Zentara">
+          </div>
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label>Catatan Admin (opsional)</label>
+            <input type="text" id="inCatatan" class="form-control" placeholder="cth: Sekolah SDN 01 Pagi / Pembayaran via Transfer">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-green">➕ Berikan Akses Gmail Sekarang</button>
+      </form>
+    </div>
+
+    <!-- DAFTAR MENUNGGU PERSETUJUAN -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">⏳ Akun Guru Menunggu Persetujuan</h2>
+        <span class="badge badge-yellow" id="badgePendingCount">0 Akun</span>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Nama</th>
+              <th>Sekolah</th>
+              <th>WhatsApp</th>
+              <th>No. Pesanan / Bukti</th>
+              <th>Waktu Daftar</th>
+              <th>Aksi 1-Klik</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyPending">
+            <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun yang menunggu persetujuan.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SEMUA AKUN GURU TERDAFTAR -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">👥 Daftar Semua Guru Terdaftar</h2>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="searchTable" onkeyup="filterGuruTable()" placeholder="Cari email / nama / pesanan..." class="form-control" style="padding:4px 10px; font-size:0.85rem; width:220px;">
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table id="guruTable">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Email</th>
+              <th>Nama</th>
+              <th>Sekolah / WA</th>
+              <th>No. Pesanan & Pemberi</th>
+              <th>Masa Aktif</th>
+              <th>Jml Kelas</th>
+              <th>Kelola Akses</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyGuru">
+            <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DAFTAR WHITELIST & NOMOR PESANAN LISENSI -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">📋 Daftar Whitelist & Nomor Pesanan Terbit (Akses Gmail)</h2>
+        <span class="badge badge-blue" id="badgeAksesCount">0 Lisensi</span>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>No. Pesanan & Pemberi</th>
+              <th>Email Target / Pemilik</th>
+              <th>Nama Pemesan</th>
+              <th>Status Akun</th>
+              <th>Masa Aktif</th>
+              <th>Batas Kelas</th>
+              <th>Catatan</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyAkses">
+            <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Memuat data whitelist...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MONITOR KELAS AKTIF -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">🏫 Monitoring Kelas & Aktivitas Murid</h2>
+        <span class="badge badge-blue" id="badgeKelasCount">0 Kelas</span>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Kode</th>
+              <th>Nama Kelas</th>
+              <th>Guru Pemilik</th>
+              <th>PIN Kelas</th>
+              <th>Status Kunci</th>
+              <th>Jumlah Murid</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyKelas">
+            <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada kelas yang dibuat.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PENGATURAN ADMIN -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">🔒 Ganti Kata Sandi Admin</h2>
+      </div>
+      <form id="changePassForm" onsubmit="handleChangePass(event)" style="max-width: 400px;">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>Kata Sandi Admin Baru</label>
+          <input type="password" id="newAdminPass" class="form-control" placeholder="Minimal 4 karakter" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Simpan Sandi Baru</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    let adminToken = localStorage.getItem('zv_admin_token') || '';
+
+    function toast(msg) {
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    async function req(url, data = {}) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Token': adminToken
+          },
+          body: JSON.stringify({ ...data, admin_token: adminToken })
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          if (res.status === 401) {
+            showLogin();
+          }
+          throw new Error(json.error || 'Terjadi kesalahan');
+        }
+        return json;
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
+    }
+
+    function showLogin() {
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+    function hideLogin() {
+      document.getElementById('loginModal').classList.add('hidden');
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('adminUser').value;
+      const p = document.getElementById('adminPass').value;
+      const errEl = document.getElementById('loginError');
+      errEl.textContent = '';
+      try {
+        const res = await fetch('/api/admin/masuk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, sandi: p })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login gagal');
+        adminToken = data.token;
+        localStorage.setItem('zv_admin_token', adminToken);
+        hideLogin();
+        toast('Selamat datang di Panel Admin Zentara!');
+        refreshAll();
+      } catch (err) {
+        errEl.textContent = err.message;
+      }
+    }
+
+    function logoutAdmin() {
+      localStorage.removeItem('zv_admin_token');
+      adminToken = '';
+      showLogin();
+    }
+
+    async function refreshAll() {
+      if (!adminToken) {
+        showLogin();
+        return;
+      }
+      try {
+        await Promise.all([loadStats(), loadAksesList(), loadKelasList()]);
+      } catch (e) {
+        console.warn('Refresh error:', e);
+      }
+    }
+
+    async function loadStats() {
+      const data = await req('/api/admin/stats');
+      document.getElementById('stTotalGuru').textContent = data.total_guru;
+      document.getElementById('stGuruAktif').textContent = data.guru_aktif;
+      document.getElementById('stGuruMenunggu').textContent = data.guru_menunggu;
+      document.getElementById('stTotalAkses').textContent = data.total_akses_gmail;
+      document.getElementById('stTotalKelas').textContent = data.total_kelas;
+      document.getElementById('stTotalMurid').textContent = data.total_murid;
+      document.getElementById('badgePendingCount').textContent = data.guru_menunggu + ' Akun';
+    }
+
+    let rawGuruList = [];
+    let rawAksesList = [];
+    async function loadAksesList() {
+      const data = await req('/api/admin/akses/daftar');
+      rawGuruList = data.guru || [];
+      rawAksesList = data.akses_gmail || [];
+
+      // Render Pending Teachers
+      const pending = rawGuruList.filter(g => g.status === 'menunggu');
+      const tbodyP = document.getElementById('tbodyPending');
+      if (pending.length === 0) {
+        tbodyP.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada akun guru yang menunggu persetujuan.</td></tr>';
+      } else {
+        tbodyP.innerHTML = pending.map(g => `
+          <tr>
+            <td><strong>${escapeHtml(g.email)}</strong></td>
+            <td>${escapeHtml(g.nama || '-')}</td>
+            <td>${escapeHtml(g.sekolah || '-')}</td>
+            <td>${escapeHtml(g.wa || '-')}</td>
+            <td style="font-weight:600; color:var(--primary); font-size:0.9rem;">
+              ${escapeHtml(g.no_pesanan || '-')}
+              ${g.pemberi ? `<div style="font-size:0.75rem; color:var(--text-muted);">Pemberi: ${escapeHtml(g.pemberi)}</div>` : ''}
+            </td>
+            <td style="color:var(--text-muted); font-size:0.8rem;">${new Date(g.created_at).toLocaleString('id-ID')}</td>
+            <td>
+              <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                <button onclick="approveGuruPrompt('${escapeHtml(g.email)}', '${escapeHtml(g.no_pesanan || '')}')" class="btn btn-primary btn-sm" title="Setujui dengan No. Pesanan & Pemberi">📝 Setujui + No. Pesanan</button>
+                <button onclick="approveGuru('${escapeHtml(g.email)}', '365')" class="btn btn-green btn-sm" title="Aktivasi cepat 1 tahun">⚡ 1 Thn</button>
+                <button onclick="approveGuru('${escapeHtml(g.email)}', 'seumur')" class="btn btn-outline btn-sm" title="Aktivasi cepat seumur hidup">♾️ Seumur</button>
+                <button onclick="deleteAkses('${escapeHtml(g.email)}')" class="btn btn-red btn-sm">Tolak</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      renderGuruTable(rawGuruList);
+      renderAksesTable(rawAksesList, rawGuruList);
+    }
+
+    function renderAksesTable(aksesList, guruList) {
+      const tbody = document.getElementById('tbodyAkses');
+      if (!tbody) return;
+      document.getElementById('badgeAksesCount').textContent = aksesList.length + ' Lisensi';
+
+      if (aksesList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada pesanan lisensi atau whitelist yang dibuat.</td></tr>';
+        return;
+      }
+
+      const registeredEmails = new Set(guruList.map(g => (g.email || '').toLowerCase()));
+
+      tbody.innerHTML = aksesList.map(a => {
+        const isRegistered = registeredEmails.has((a.email || '').toLowerCase());
+        const badge = isRegistered 
+          ? '<span class="badge badge-green">Terdaftar di Game</span>' 
+          : '<span class="badge badge-yellow">Menunggu Klaim Guru</span>';
+
+        let sSampai = 'Seumur Hidup';
+        if (a.sampai > 0) {
+          const sDate = new Date(a.sampai);
+          sSampai = sDate.toLocaleDateString('id-ID') + (a.sampai < Date.now() ? ' (Habis)' : '');
+        }
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:700; color:var(--primary); font-size:0.9rem;">${escapeHtml(a.no_pesanan || '-')}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">Pemberi: <strong>${escapeHtml(a.pemberi || 'Admin Zentara')}</strong></div>
+            </td>
+            <td><strong>${escapeHtml(a.email)}</strong></td>
+            <td>${escapeHtml(a.nama || '-')}</td>
+            <td>${badge}</td>
+            <td>${sSampai}</td>
+            <td><span class="badge badge-blue">${a.maks_kelas || 10} Kelas</span></td>
+            <td style="font-size:0.8rem; color:var(--text-muted); max-width:180px;">${escapeHtml(a.catatan || '-')}</td>
+            <td>
+              <div style="display:flex; gap:4px;">
+                <button onclick="editLisensi('${escapeHtml(a.email)}', '${escapeHtml(a.no_pesanan || '')}', '${escapeHtml(a.pemberi || 'Admin Zentara')}', ${a.maks_kelas || 10})" class="btn btn-outline btn-sm">✏️ Lisensi</button>
+                <button onclick="deleteAkses('${escapeHtml(a.email)}')" class="btn btn-red btn-sm">Hapus</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderGuruTable(list) {
+      const tbody = document.getElementById('tbodyGuru');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada akun guru terdaftar.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(g => {
+        let badge = '<span class="badge badge-green">Aktif</span>';
+        if (g.status === 'menunggu') badge = '<span class="badge badge-yellow">Menunggu</span>';
+        else if (g.status === 'blokir') badge = '<span class="badge badge-red">Diblokir</span>';
+        else if (g.status === 'seumur' || g.sampai === 0) badge = '<span class="badge badge-blue">Seumur Hidup</span>';
+        else if (g.sampai > 0 && g.sampai < Date.now()) badge = '<span class="badge badge-red">Habis</span>';
+
+        let sSampai = 'Seumur Hidup';
+        if (g.sampai > 0) {
+          const sDate = new Date(g.sampai);
+          sSampai = sDate.toLocaleDateString('id-ID') + (g.sampai < Date.now() ? ' (Habis)' : '');
+        }
+
+        return `
+          <tr>
+            <td>${badge}</td>
+            <td><strong>${escapeHtml(g.email)}</strong></td>
+            <td>${escapeHtml(g.nama || '-')}</td>
+            <td>
+              <div>${escapeHtml(g.sekolah || '-')}</div>
+              <div style="font-size:0.8rem; color:var(--text-muted);">${escapeHtml(g.wa || '')}</div>
+            </td>
+            <td>
+              <div style="font-weight:600; font-size:0.85rem; color:var(--text);">${escapeHtml(g.no_pesanan || '-')}</div>
+              <div style="font-size:0.75rem; color:var(--primary); font-weight:500;">Oleh: ${escapeHtml(g.pemberi || 'Admin Zentara')}</div>
+            </td>
+            <td>${sSampai}</td>
+            <td><span class="badge badge-blue">${g.kelas_count || 0} / ${g.maks_kelas || 10}</span></td>
+            <td>
+              <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                <button onclick="editLisensi('${escapeHtml(g.email)}', '${escapeHtml(g.no_pesanan||'')}', '${escapeHtml(g.pemberi||'Admin Zentara')}', ${g.maks_kelas||10})" class="btn btn-outline btn-sm" title="Edit Nomor Pesanan & Pemberi Lisensi">✏️ Lisensi</button>
+                ${g.status === 'blokir' 
+                  ? `<button onclick="setStatus('${escapeHtml(g.email)}', 'aktif')" class="btn btn-green btn-sm">Buka Blokir</button>` 
+                  : `<button onclick="setStatus('${escapeHtml(g.email)}', 'blokir')" class="btn btn-yellow btn-sm">Blokir</button>`}
+                <button onclick="approveGuru('${escapeHtml(g.email)}', '365')" class="btn btn-primary btn-sm" title="Perpanjang 1 tahun">+1 Thn</button>
+                <button onclick="approveGuru('${escapeHtml(g.email)}', '30')" class="btn btn-outline btn-sm" title="Perpanjang 30 hari">+30 Hr</button>
+                <button onclick="approveGuru('${escapeHtml(g.email)}', 'seumur')" class="btn btn-green btn-sm" title="Aktifkan seumur hidup">Seumur Hidup</button>
+                <button onclick="deleteAkses('${escapeHtml(g.email)}')" class="btn btn-red btn-sm">Hapus</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterGuruTable() {
+      const q = document.getElementById('searchTable').value.toLowerCase();
+      const filtered = rawGuruList.filter(g => 
+        (g.email || '').toLowerCase().includes(q) || 
+        (g.nama || '').toLowerCase().includes(q) ||
+        (g.sekolah || '').toLowerCase().includes(q) ||
+        (g.no_pesanan || '').toLowerCase().includes(q) ||
+        (g.pemberi || '').toLowerCase().includes(q)
+      );
+      renderGuruTable(filtered);
+    }
+
+    async function loadKelasList() {
+      const data = await req('/api/admin/kelas');
+      const list = data.kelas || [];
+      document.getElementById('badgeKelasCount').textContent = list.length + ' Kelas';
+      const tbody = document.getElementById('tbodyKelas');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada kelas yang dibuat.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(k => `
+        <tr>
+          <td><strong style="font-family:Fredoka; color:#a855f7; font-size:1.1rem;">${k.kode}</strong></td>
+          <td><strong>${escapeHtml(k.nama)}</strong></td>
+          <td>
+            <div>${escapeHtml(k.guru_nama || '-')}</div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">${escapeHtml(k.guru_email || '')}</div>
+          </td>
+          <td><code>${k.pin ? escapeHtml(k.pin) : 'Tanpa PIN'}</code></td>
+          <td>${k.terkunci ? '<span class="badge badge-red">Terkunci</span>' : '<span class="badge badge-green">Terbuka</span>'}</td>
+          <td><strong>${k.murid_count || 0}</strong> Murid</td>
+        </tr>
+      `).join('');
+    }
+
+    async function handleAddAkses(e) {
+      e.preventDefault();
+      const email = document.getElementById('inEmail').value.trim();
+      const nama = document.getElementById('inNama').value.trim();
+      const durasi = document.getElementById('inDurasi').value;
+      const maksKelas = document.getElementById('inMaksKelas').value;
+      const noPesanan = document.getElementById('inNoPesanan').value.trim();
+      const pemberi = document.getElementById('inPemberi').value.trim();
+      const catatan = document.getElementById('inCatatan').value.trim();
+
+      try {
+        const payload = {
+          email,
+          nama,
+          maks_kelas: maksKelas,
+          no_pesanan: noPesanan,
+          pemberi: pemberi || 'Admin Zentara',
+          catatan,
+          status: 'aktif'
+        };
+        if (durasi === 'seumur') {
+          payload.seumur = true;
+        } else {
+          payload.masa_hari = Number(durasi);
+        }
+
+        const res = await req('/api/admin/akses/tambah', payload);
+        toast(res.msg || 'Akses berhasil diberikan!');
+        document.getElementById('inEmail').value = '';
+        document.getElementById('inNama').value = '';
+        document.getElementById('inNoPesanan').value = '';
+        document.getElementById('inCatatan').value = '';
+        refreshAll();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function approveGuruPrompt(email, defaultNoPesanan = '') {
+      const defNo = defaultNoPesanan || ('INV-' + Math.floor(Date.now() / 1000));
+      const no_pesanan = prompt(`Masukkan Nomor Pesanan / Invoice untuk ${email}:`, defNo);
+      if (no_pesanan === null) return;
+      const pemberi = prompt(`Masukkan Nama Pemberi Lisensi:`, 'Admin Zentara');
+      if (pemberi === null) return;
+      const durasi = prompt(`Pilih durasi (hari, misal: 365, 30, atau ketik 'seumur'):`, '365');
+      if (durasi === null) return;
+
+      try {
+        const payload = { email, status: 'aktif', no_pesanan, pemberi };
+        if (durasi.trim().toLowerCase() === 'seumur') payload.seumur = true;
+        else payload.masa_hari = Number(durasi) || 365;
+
+        const res = await req('/api/admin/akses/setujui', payload);
+        toast(res.msg || 'Akun berhasil disetujui!');
+        refreshAll();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function editLisensi(email, currentNoPesanan, currentPemberi, currentMaks) {
+      const no_pesanan = prompt(`Ubah Nomor Pesanan untuk ${email}:`, currentNoPesanan || '');
+      if (no_pesanan === null) return;
+      const pemberi = prompt(`Ubah Pemberi Lisensi untuk ${email}:`, currentPemberi || 'Admin Zentara');
+      if (pemberi === null) return;
+      const maks_kelas_str = prompt(`Batas Maksimal Kelas:`, currentMaks || 10);
+      if (maks_kelas_str === null) return;
+      const maks_kelas = Number(maks_kelas_str) || 10;
+
+      try {
+        const res = await req('/api/admin/akses/ubah', { email, no_pesanan, pemberi, maks_kelas });
+        toast(res.msg || 'Data lisensi berhasil diperbarui!');
+        refreshAll();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function approveGuru(email, durasi) {
+      try {
+        const payload = { email, status: 'aktif' };
+        if (durasi === 'seumur') payload.seumur = true;
+        else payload.masa_hari = Number(durasi);
+
+        const res = await req('/api/admin/akses/setujui', payload);
+        toast(res.msg);
+        refreshAll();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function setStatus(email, status) {
+      if (!confirm(`Ubah status akun ${email} menjadi ${status}?`)) return;
+      try {
+        const res = await req('/api/admin/akses/status', { email, status });
+        toast(res.msg);
+        refreshAll();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function deleteAkses(email) {
+      if (!confirm(`Yakin ingin menghapus akses & data akun ${email}? Tindakan ini permanen!`)) return;
+      try {
+        const res = await req('/api/admin/akses/hapus', { email });
+        toast(res.msg);
+        refreshAll();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function handleChangePass(e) {
+      e.preventDefault();
+      const newPass = document.getElementById('newAdminPass').value;
+      try {
+        const res = await req('/api/admin/sandi', { sandi_baru: newPass });
+        toast(res.msg);
+        document.getElementById('newAdminPass').value = '';
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Auto init
+    if (adminToken) {
+      hideLogin();
+      refreshAll();
+    } else {
+      showLogin();
+    }
+
+    // Auto refresh setiap 8 detik agar pesanan & pendaftaran baru langsung muncul otomatis
+    setInterval(() => {
+      if (adminToken) {
+        refreshAll();
+      }
+    }, 8000);
+  </script>
+</body>
+</html>
