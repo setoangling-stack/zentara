@@ -1227,7 +1227,7 @@ const rooms = new Map();
 
 server.on('upgrade', (request, socket, head) => {
   const parsed = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
-  if (parsed.pathname.startsWith('/ws')) {
+  if (parsed.pathname === '/ws' || parsed.pathname.startsWith('/ws/') || parsed.pathname.startsWith('/ws?')) {
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
     });
@@ -1239,13 +1239,25 @@ server.on('upgrade', (request, socket, head) => {
 wss.on('connection', (ws, req) => {
   const parsed = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const kode = (parsed.searchParams.get('kode') || '').toUpperCase();
+  const token = parsed.searchParams.get('token') || '';
   const isGuru = Boolean(parsed.searchParams.get('guru'));
   const clientId = genToken(8);
 
   ws.roomKode = kode;
   ws.clientId = clientId;
   ws.isGuru = isGuru;
-  ws.info = { id: clientId, isGuru: isGuru };
+  ws.info = { id: clientId, g: isGuru ? 1 : 0, isGuru: isGuru };
+
+  if (kode && token && !isGuru) {
+    try {
+      const m = db.prepare('SELECT id, nama, absen FROM murid WHERE kelas_kode = ? AND token = ?').get(kode, token);
+      if (m) {
+        ws.muridId = m.id;
+        ws.info.nama = m.nama;
+        ws.info.absen = m.absen;
+      }
+    } catch {}
+  }
 
   if (kode) {
     if (!rooms.has(kode)) rooms.set(kode, new Map());
@@ -1262,37 +1274,137 @@ wss.on('connection', (ws, req) => {
     }
   };
 
+  const getRoster = () => {
+    const list = [];
+    if (ws.roomKode && rooms.has(ws.roomKode)) {
+      for (const peer of rooms.get(ws.roomKode).values()) {
+        if (peer.info && peer.info.nama) list.push(peer.info);
+      }
+    }
+    return list;
+  };
+
+  const syncRoster = () => {
+    broadcast({ t: 'roster', list: getRoster() });
+  };
+
   ws.on('message', (raw) => {
     let d;
     try { d = JSON.parse(raw); } catch { return; }
 
     if (d.t === 'auth') {
-      ws.send(JSON.stringify({ t: 'ok' }));
-      const roster = [];
-      if (rooms.has(ws.roomKode)) {
-        for (const peer of rooms.get(ws.roomKode).values()) {
-          if (peer.info) roster.push(peer.info);
+      ws.isGuru = true;
+      ws.info.g = 1;
+      ws.info.isGuru = true;
+      if (d.mode === 'obs') ws.info.obs = true;
+
+      if (d.lic) {
+        const guru = getGuruByLic(d.lic);
+        if (guru) {
+          ws.info.nama = guru.nama || 'Guru';
         }
       }
-      ws.send(JSON.stringify({ t: 'roster', list: roster }));
+      ws.send(JSON.stringify({ t: 'ok', id: clientId }));
+      ws.send(JSON.stringify({ t: 'roster', list: getRoster() }));
       return;
     }
 
-    if (d.t === 'hi') {
-      ws.info = { ...ws.info, ...d };
-      broadcast({ t: 'peer_in', id: clientId, ...d }, clientId);
+    if (d.t === 'hi' || d.t === 'z') {
+      const prevZ = ws.info.z;
+      ws.info = {
+        ...ws.info,
+        nama: ws.info.nama || d.nama || 'Teman',
+        z: d.z || 'kota',
+        o: d.o || ws.info.o,
+        p: d.p || ws.info.p,
+        sc: d.sc || ws.info.sc,
+        lv: (d.sc && d.sc.lv) ? d.sc.lv : (ws.info.lv || 1)
+      };
+
+      ws.send(JSON.stringify({ t: 'roster', list: getRoster() }));
+
+      if (ws.roomKode && rooms.has(ws.roomKode)) {
+        const peersInZone = [];
+        for (const [id, peer] of rooms.get(ws.roomKode).entries()) {
+          if (id !== clientId && peer.info && peer.info.z === ws.info.z) {
+            peersInZone.push(peer.info);
+          }
+        }
+        ws.send(JSON.stringify({ t: 'all', me: clientId, list: peersInZone }));
+      }
+
+      broadcast({
+        t: 'join',
+        id: clientId,
+        nama: ws.info.nama,
+        z: ws.info.z,
+        g: ws.info.g,
+        o: ws.info.o,
+        p: ws.info.p,
+        lv: ws.info.lv
+      }, clientId);
+
+      if (d.t === 'z' && prevZ && prevZ !== ws.info.z) {
+        broadcast({ t: 'left', id: clientId }, clientId);
+      }
+
+      syncRoster();
       return;
     }
 
-    if (d.t === 'pos') {
+    if (d.t === 'p') {
       ws.info.p = d.p;
-      ws.info.r = d.r;
-      broadcast({ t: 'pos', id: clientId, p: d.p, r: d.r }, clientId);
+      broadcast({ t: 'p', id: clientId, p: d.p }, clientId);
       return;
     }
 
-    if (d.t === 'say' || d.t === 'emo' || d.t === 'ev') {
-      broadcast({ ...d, id: clientId }, clientId);
+    if (d.t === 'o') {
+      ws.info.o = d.o;
+      broadcast({ t: 'o', id: clientId, o: d.o }, clientId);
+      return;
+    }
+
+    if (d.t === 'e') {
+      broadcast({ t: 'e', id: clientId, e: d.e }, clientId);
+      return;
+    }
+
+    if (d.t === 'sc') {
+      ws.info.sc = d.sc;
+      if (d.sc && d.sc.lv) ws.info.lv = d.sc.lv;
+      syncRoster();
+      return;
+    }
+
+    if (d.t === 'st') {
+      ws.info.st = { s: d.s, m: d.m, q: d.q };
+      broadcast({ t: 'st', id: clientId, st: ws.info.st });
+      return;
+    }
+
+    if (d.t === 'siap') {
+      ws.info.siap = d.id;
+      syncRoster();
+      return;
+    }
+
+    if (d.t === 'go') {
+      broadcast({ t: 'go', id: d.id, k: d.k });
+      return;
+    }
+
+    if (d.t === 'ann') {
+      broadcast({ t: 'ann', nama: ws.info.nama || 'Guru', text: d.text, at: Date.now() });
+      return;
+    }
+
+    if (d.t === 'call') {
+      broadcast({ t: 'call', nama: ws.info.nama || 'Guru', z: ws.info.z || 'kota' });
+      return;
+    }
+
+    if (d.t === 'ev') {
+      broadcast({ t: 'ev', id: clientId, nama: ws.info.nama, ...d });
       return;
     }
   });
@@ -1300,8 +1412,9 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     if (ws.roomKode && rooms.has(ws.roomKode)) {
       rooms.get(ws.roomKode).delete(clientId);
-      broadcast({ t: 'peer_out', id: clientId });
+      broadcast({ t: 'left', id: clientId });
       if (rooms.get(ws.roomKode).size === 0) rooms.delete(ws.roomKode);
+      else syncRoster();
     }
   });
 });
