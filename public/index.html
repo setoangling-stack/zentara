@@ -5612,13 +5612,15 @@ function buildTiongkok(){setEnv("tiongkok");W_ground("#7a9a5f",["rgba(60,90,40,.
    MAIN BERSAMA (multiplayer teman sekelas)
    ================================================================= */
 var RT_DEFAULT=(location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws";
-var RT_URL=(function(){var q=null;try{q=new URLSearchParams(location.search).get("rt")}catch(e){}if(q!=null){lsSet("zd2_rt",q);return q}var s=lsGet("zd2_rt",null);return s!=null?s:RT_DEFAULT})();
+var RT_URL=(function(){var q=null;try{q=new URLSearchParams(location.search).get("rt")}catch(e){}if(q!=null&&q.trim()){lsSet("zd2_rt",q.trim());return q.trim()}return RT_DEFAULT})();
 var RT={ws:null,on:false,retry:0,tm:null,stop:false,peers:{},roster:[],me:null,lastP:null,lastSend:0,scSig:"",chk:0,self:{emo:null,et:0},oT:null};
 var EMO_LIST=["👋","😀","👍","🎉","❤️","🤔","😮","💪"],FRASA=["Ayo ke gedung mapel!","Ayo belajar bareng!","Selamat ya!","Aku butuh bantuan","Ikuti aku!","Terima kasih!"];
-function rtWanted(){return!!((CL||GURU)&&RT_URL&&P.settings.mp!==false&&mode!=="landing"&&typeof WebSocket!=="undefined")}
+function rtWanted(){return!!(RT_URL&&P.settings.mp!==false&&mode!=="landing"&&typeof WebSocket!=="undefined")}
 function rtConnect(){if(RT.ws||RT.stop||!rtWanted())return;var ws;
  var base=RT_URL.replace(/\/+$/,"")+"/kelas?kode=";
- try{ws=new WebSocket(GURU?base+encodeURIComponent(GURU.kode)+"&guru=1":base+encodeURIComponent(CL.kode)+"&token="+encodeURIComponent(CL.token))}catch(e){rtLater();return}
+ var myName=encodeURIComponent(P.name||(CL?CL.nama:"Petualang"));
+ var q=GURU?base+encodeURIComponent(GURU.kode)+"&guru=1":(CL?base+encodeURIComponent(CL.kode)+"&token="+encodeURIComponent(CL.token)+"&nama="+myName:base+"PUBLIK&nama="+myName);
+ try{ws=new WebSocket(q)}catch(e){rtLater();return}
  RT.ws=ws;ws.onopen=function(){if(GURU){try{ws.send(JSON.stringify({t:"auth",lic:licBody(),pin:GURU.pin,mode:"play"}))}catch(e){}return}RT.on=true;RT.retry=0;rtHello("hi");updOnline()};
  ws.onmessage=function(ev){var d;try{d=JSON.parse(ev.data)}catch(e){return}rtMsg(d)};
  ws.onclose=function(ev){RT.ws=null;RT.on=false;rtClearPeers();RT.roster=[];updOnline();if(GURU)updGuruUI();if(ev&&ev.code===4001){RT.stop=true;return}if(ev&&ev.code===4000){RT.stop=true;toast("👥 Akunmu dibuka di perangkat lain. Main bersama di perangkat ini dihentikan.",4500);return}rtLater()};
@@ -5629,14 +5631,14 @@ function rtSend(o){if(RT.ws&&RT.on){try{RT.ws.send(JSON.stringify(o))}catch(e){}
 function rtP(){var o=lobiOff()||{x:0,y:0,z:0};return[Math.round((pos.x-o.x)*100)/100,Math.round((pos.y-o.y)*100)/100,Math.round((pos.z-o.z)*100)/100,Math.round(heading*100)/100]}
 function rtAbs(p){var o=lobiOff();return o&&p?[p[0]+o.x,p[1]+o.y,p[2]+o.z,p[3]]:p}
 function rtSc(){return{lv:P.level,bh:dailyN(),g:Object.keys(P.stats.done).length}}
-function rtHello(t){RT.scSig=JSON.stringify(rtSc());RT.stSig="";RT.lastP=rtP();rtSend({t:t,z:lobiZone(),o:P.outfit,p:RT.lastP,sc:rtSc()});if(WAIT&&!WAIT.go)rtSend({t:"siap",id:WAIT.id})}
-function rtPeer(d,abs){if(d.id===RT.me)return;rtDrop(d.id);var g=buildAvatar(d.o||DEF_OUTFIT),tag=d.g?nameTag("👩‍🏫 "+(d.nama||"Guru")+" (Guru)","#fbbf24",3.2):nameTag((d.nama||"Teman")+" • Lv "+(d.lv||1),"#38bdf8",2.6);tag.position.set(0,6,0);g.add(tag);g.userData.dyn=true;
- var p=d.p?(abs?d.p:rtAbs(d.p)):(lobiOff()?[lobiOff().x,lobiOff().y,lobiOff().z,0]:[CUR.spawn[0],0,CUR.spawn[2],0]);g.position.set(p[0],p[1],p[2]);g.rotation.y=p[3];scene.add(g);RT.peers[d.id]={id:d.id,nama:d.nama,g:g,tgt:p.slice(),walk:0,emo:null,et:0,lv:d.lv||1,o:d.o,guru:d.g}}
+function rtHello(t){RT.scSig=JSON.stringify(rtSc());RT.stSig="";RT.lastP=rtP();var myName=(GURU?GURU.nama:(CL?CL.nama:(P.name||"Petualang")));rtSend({t:t,z:lobiZone(),nama:myName,o:P.outfit,p:RT.lastP,sc:rtSc()});if(WAIT&&!WAIT.go)rtSend({t:"siap",id:WAIT.id})}
+function rtPeer(d,abs){if(!d||!d.id||d.id===RT.me)return;rtDrop(d.id);var g=buildAvatar(d.o||DEF_OUTFIT),tag=d.g?nameTag("👩‍🏫 "+(d.nama||"Guru")+" (Guru)","#fbbf24",3.2):nameTag((d.nama||"Teman")+" • Lv "+(d.lv||1),"#38bdf8",2.6);tag.position.set(0,6,0);g.add(tag);g.userData.dyn=true;
+ var p=d.p?(abs?d.p:rtAbs(d.p)):(lobiOff()?[lobiOff().x,lobiOff().y,lobiOff().z,0]:[CUR.spawn[0],CUR.spawn[1]||0.3,CUR.spawn[2],0]);g.position.set(p[0],p[1],p[2]);g.rotation.y=p[3]||0;scene.add(g);RT.peers[d.id]={id:d.id,nama:d.nama,g:g,tgt:p.slice(),walk:0,emo:null,et:0,lv:d.lv||1,o:d.o,guru:d.g}}
 function rtDrop(id){var pr=RT.peers[id];if(!pr)return;scene.remove(pr.g);pr.g.traverse(function(x){if(x.material&&x.material.map)x.material.map.dispose()});delete RT.peers[id]}
 function rtClearPeers(){Object.keys(RT.peers).forEach(rtDrop)}
 function rtMsg(d){
  if(rtGuruMsg(d))return;
- if(d.t==="all"){RT.me=d.me;rtClearPeers();(d.list||[]).forEach(rtPeer);if(d.list&&d.list.length&&mode==="play")toast("👥 "+d.list.length+" teman sekelas ada di sini",2500)}
+ if(d.t==="all"){RT.me=d.me;rtClearPeers();(d.list||[]).forEach(function(item){rtPeer(item)});if(d.list&&d.list.length&&mode==="play")toast("👥 "+d.list.length+" pemain ada di sini",2500)}
  else if(d.t==="join"){rtPeer(d);if(mode==="play")toast((d.g?"👩‍🏫 "+d.nama+" (guru) datang ke sini":"👋 "+d.nama+" datang ke sini"),2200)}
  else if(d.t==="left")rtDrop(d.id);
  else if(d.t==="p"){var a=RT.peers[d.id];if(a&&d.p)a.tgt=rtAbs(d.p)}

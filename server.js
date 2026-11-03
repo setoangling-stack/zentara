@@ -1227,7 +1227,7 @@ const rooms = new Map();
 
 server.on('upgrade', (request, socket, head) => {
   const parsed = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
-  if (parsed.pathname === '/ws' || parsed.pathname.startsWith('/ws/') || parsed.pathname.startsWith('/ws?')) {
+  if (parsed.pathname === '/ws' || parsed.pathname.startsWith('/ws/') || parsed.pathname.startsWith('/ws?') || parsed.pathname === '/kelas' || parsed.pathname.startsWith('/kelas/') || parsed.pathname.startsWith('/kelas?')) {
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
     });
@@ -1238,37 +1238,59 @@ server.on('upgrade', (request, socket, head) => {
 
 wss.on('connection', (ws, req) => {
   const parsed = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const kode = (parsed.searchParams.get('kode') || '').toUpperCase();
-  const token = parsed.searchParams.get('token') || '';
+  const rawKode = parsed.searchParams.get('kode');
+  const kode = (rawKode ? rawKode.trim().toUpperCase() : 'PUBLIK');
+  const token = (parsed.searchParams.get('token') || '').trim();
   const isGuru = Boolean(parsed.searchParams.get('guru'));
+  const qNama = (parsed.searchParams.get('nama') || '').trim();
   const clientId = genToken(8);
 
   ws.roomKode = kode;
   ws.clientId = clientId;
   ws.isGuru = isGuru;
-  ws.info = { id: clientId, g: isGuru ? 1 : 0, isGuru: isGuru };
+  ws.info = {
+    id: clientId,
+    nama: isGuru ? 'Guru' : (qNama || 'Petualang'),
+    absen: '',
+    z: 'kota',
+    g: isGuru ? 1 : 0,
+    isGuru: isGuru,
+    o: null,
+    p: null,
+    lv: 1
+  };
 
   if (kode && token && !isGuru) {
     try {
-      const m = db.prepare('SELECT id, nama, absen FROM murid WHERE kelas_kode = ? AND token = ?').get(kode, token);
+      const m = db.prepare('SELECT token, nama, absen FROM murid WHERE kelas_kode = ? AND token = ?').get(kode, token);
       if (m) {
-        ws.muridId = m.id;
-        ws.info.nama = m.nama;
-        ws.info.absen = m.absen;
+        ws.muridToken = m.token;
+        ws.info.nama = m.nama || ws.info.nama;
+        ws.info.absen = m.absen || '';
       }
-    } catch {}
+    } catch (e) {
+      console.error('[WS] Murid lookup error:', e);
+    }
   }
 
-  if (kode) {
-    if (!rooms.has(kode)) rooms.set(kode, new Map());
-    rooms.get(kode).set(clientId, ws);
-  }
+  if (!rooms.has(kode)) rooms.set(kode, new Map());
+  rooms.get(kode).set(clientId, ws);
 
-  const broadcast = (data, excludeId = null) => {
+  const broadcastToRoom = (data, excludeId = null) => {
     if (!ws.roomKode || !rooms.has(ws.roomKode)) return;
     const msg = JSON.stringify(data);
     for (const [id, peer] of rooms.get(ws.roomKode).entries()) {
       if (id !== excludeId && peer.readyState === peer.OPEN) {
+        try { peer.send(msg); } catch {}
+      }
+    }
+  };
+
+  const broadcastToZone = (zone, data, excludeId = null) => {
+    if (!ws.roomKode || !rooms.has(ws.roomKode) || !zone) return;
+    const msg = JSON.stringify(data);
+    for (const [id, peer] of rooms.get(ws.roomKode).entries()) {
+      if (id !== excludeId && peer.readyState === peer.OPEN && peer.info && peer.info.z === zone) {
         try { peer.send(msg); } catch {}
       }
     }
@@ -1285,7 +1307,7 @@ wss.on('connection', (ws, req) => {
   };
 
   const syncRoster = () => {
-    broadcast({ t: 'roster', list: getRoster() });
+    broadcastToRoom({ t: 'roster', list: getRoster() });
   };
 
   ws.on('message', (raw) => {
@@ -1309,11 +1331,10 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
-    if (d.t === 'hi' || d.t === 'z') {
-      const prevZ = ws.info.z;
+    if (d.t === 'hi') {
       ws.info = {
         ...ws.info,
-        nama: ws.info.nama || d.nama || 'Teman',
+        nama: (d.nama && d.nama.trim()) || ws.info.nama || 'Teman',
         z: d.z || 'kota',
         o: d.o || ws.info.o,
         p: d.p || ws.info.p,
@@ -1333,7 +1354,7 @@ wss.on('connection', (ws, req) => {
         ws.send(JSON.stringify({ t: 'all', me: clientId, list: peersInZone }));
       }
 
-      broadcast({
+      broadcastToZone(ws.info.z, {
         t: 'join',
         id: clientId,
         nama: ws.info.nama,
@@ -1344,9 +1365,48 @@ wss.on('connection', (ws, req) => {
         lv: ws.info.lv
       }, clientId);
 
-      if (d.t === 'z' && prevZ && prevZ !== ws.info.z) {
-        broadcast({ t: 'left', id: clientId }, clientId);
+      syncRoster();
+      return;
+    }
+
+    if (d.t === 'z') {
+      const prevZ = ws.info.z;
+      const newZ = d.z || 'kota';
+
+      ws.info = {
+        ...ws.info,
+        nama: (d.nama && d.nama.trim()) || ws.info.nama || 'Teman',
+        z: newZ,
+        o: d.o || ws.info.o,
+        p: d.p || ws.info.p,
+        sc: d.sc || ws.info.sc,
+        lv: (d.sc && d.sc.lv) ? d.sc.lv : (ws.info.lv || 1)
+      };
+
+      if (prevZ && prevZ !== newZ) {
+        broadcastToZone(prevZ, { t: 'left', id: clientId }, clientId);
       }
+
+      if (ws.roomKode && rooms.has(ws.roomKode)) {
+        const peersInZone = [];
+        for (const [id, peer] of rooms.get(ws.roomKode).entries()) {
+          if (id !== clientId && peer.info && peer.info.z === newZ) {
+            peersInZone.push(peer.info);
+          }
+        }
+        ws.send(JSON.stringify({ t: 'all', me: clientId, list: peersInZone }));
+      }
+
+      broadcastToZone(newZ, {
+        t: 'join',
+        id: clientId,
+        nama: ws.info.nama,
+        z: newZ,
+        g: ws.info.g,
+        o: ws.info.o,
+        p: ws.info.p,
+        lv: ws.info.lv
+      }, clientId);
 
       syncRoster();
       return;
@@ -1354,18 +1414,18 @@ wss.on('connection', (ws, req) => {
 
     if (d.t === 'p') {
       ws.info.p = d.p;
-      broadcast({ t: 'p', id: clientId, p: d.p }, clientId);
+      broadcastToZone(ws.info.z, { t: 'p', id: clientId, p: d.p }, clientId);
       return;
     }
 
     if (d.t === 'o') {
       ws.info.o = d.o;
-      broadcast({ t: 'o', id: clientId, o: d.o }, clientId);
+      broadcastToZone(ws.info.z, { t: 'o', id: clientId, o: d.o }, clientId);
       return;
     }
 
     if (d.t === 'e') {
-      broadcast({ t: 'e', id: clientId, e: d.e }, clientId);
+      broadcastToZone(ws.info.z, { t: 'e', id: clientId, e: d.e }, clientId);
       return;
     }
 
@@ -1378,7 +1438,7 @@ wss.on('connection', (ws, req) => {
 
     if (d.t === 'st') {
       ws.info.st = { s: d.s, m: d.m, q: d.q };
-      broadcast({ t: 'st', id: clientId, st: ws.info.st });
+      broadcastToRoom({ t: 'st', id: clientId, st: ws.info.st });
       return;
     }
 
@@ -1389,22 +1449,22 @@ wss.on('connection', (ws, req) => {
     }
 
     if (d.t === 'go') {
-      broadcast({ t: 'go', id: d.id, k: d.k });
+      broadcastToRoom({ t: 'go', id: d.id, k: d.k });
       return;
     }
 
     if (d.t === 'ann') {
-      broadcast({ t: 'ann', nama: ws.info.nama || 'Guru', text: d.text, at: Date.now() });
+      broadcastToRoom({ t: 'ann', nama: ws.info.nama || 'Guru', text: d.text, at: Date.now() });
       return;
     }
 
     if (d.t === 'call') {
-      broadcast({ t: 'call', nama: ws.info.nama || 'Guru', z: ws.info.z || 'kota' });
+      broadcastToRoom({ t: 'call', nama: ws.info.nama || 'Guru', z: ws.info.z || 'kota' });
       return;
     }
 
     if (d.t === 'ev') {
-      broadcast({ t: 'ev', id: clientId, nama: ws.info.nama, ...d });
+      broadcastToRoom({ t: 'ev', id: clientId, nama: ws.info.nama, ...d });
       return;
     }
   });
@@ -1412,7 +1472,7 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     if (ws.roomKode && rooms.has(ws.roomKode)) {
       rooms.get(ws.roomKode).delete(clientId);
-      broadcast({ t: 'left', id: clientId });
+      broadcastToRoom({ t: 'left', id: clientId });
       if (rooms.get(ws.roomKode).size === 0) rooms.delete(ws.roomKode);
       else syncRoster();
     }
