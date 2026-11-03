@@ -610,7 +610,7 @@ body.dtkOn #tracker{display:none!important}.dtkT{font-style:normal}@media(max-wi
      <tr><td>Kode kelas (Tahap 2)</td><td><code>zentara.../#k=K7M2QX</code></td></tr>
     </table>
     <p class="mut" style="margin-top:12px">Saran penamaan file agar rapi: <b>jenjang-kelas-mapel.json</b>, misalnya <b>sd5-ipas.json</b>, <b>smp8-bindo.json</b>, <b>smk11-akuntansi.json</b>. Simpan semua file di satu folder <b>/paket/</b> agar mudah dibagikan antar guru.</p>
-    <div class="row"><button class="btn yel" id="lpGuru2">👩‍🏫 Buka Mode Guru</button><a class="btn green" href="https://lynk.id/alizaenal22/82o36qy070wr" target="_blank" rel="noopener">🛒 Langganan Mode Guru</a><a class="btn" href="guru.html">📘 Fitur &amp; Panduan Guru</a></div><p class="mut" style="margin-top:10px">Mode Guru memakai langganan tahunan: daftar dengan akun Google atau email, lalu aktifkan. Murid bermain gratis.</p>
+    <div class="row"><button class="btn yel" id="lpGuru2">👩‍🏫 Buka Mode Guru</button><a class="btn green" href="https://wa.me/6287810215522?text=Halo%20admin%20Zentara%2C%20saya%20ingin%20berlangganan%20Mode%20Guru." target="_blank" rel="noopener">🛒 Langganan Mode Guru</a><a class="btn" href="guru.html">📘 Fitur &amp; Panduan Guru</a></div><p class="mut" style="margin-top:10px">Mode Guru memakai langganan tahunan: daftar dengan akun Google atau email, lalu aktifkan. Murid bermain gratis.</p>
    </div>
   </div>
  </div></section>
@@ -735,7 +735,7 @@ body.dtkOn #tracker{display:none!important}.dtkT{font-style:normal}@media(max-wi
  <div id="licA">
   <div class="licpro"><div class="licbadge">⭐ KHUSUS GURU BERLANGGANAN</div><div class="mut" id="licInfo" style="font-size:13px">Mode Guru (editor soal, kelas online, dan dashboard nilai) hanya untuk guru yang sudah membeli langganan. Murid tetap bermain <b>gratis</b> dengan kode kelas dari guru.</div>
    <div class="licsteps"><div><b>1</b>🛒 Beli langganan</div><div><b>2</b>📝 Daftar akun</div><div><b>3</b>✅ Diaktifkan admin</div></div>
-   <div class="row" style="margin-top:8px;justify-content:center"><a class="btn sm yel" id="licBeli2" href="https://lynk.id/alizaenal22/82o36qy070wr" target="_blank" rel="noopener">🛒 Belum berlangganan? Beli di sini</a></div></div>
+   <div class="row" style="margin-top:8px;justify-content:center"><a class="btn sm yel" id="licBeli2" href="https://wa.me/6287810215522?text=Halo%20admin%20Zentara%2C%20saya%20ingin%20berlangganan%20Mode%20Guru." target="_blank" rel="noopener">🛒 Belum berlangganan? Beli di sini</a></div></div>
   <div class="mut" style="font-size:12px;margin-top:10px;text-align:center">Sudah punya akun? Masuk di bawah ini.</div>
   <div id="licGWrap" style="display:none;margin-top:14px;text-align:center"><div id="licG" style="display:inline-block;min-height:44px"></div></div>
   <div class="licor" id="licOr" style="display:none"><span>atau dengan email</span></div>
@@ -771,7 +771,7 @@ body.dtkOn #tracker{display:none!important}.dtkT{font-style:normal}@media(max-wi
  </div>
  <div id="licMsg" class="mut" style="margin-top:10px;min-height:20px"></div>
  <div class="mut" style="font-size:11px;margin-top:4px">Dengan masuk atau mendaftar, Anda menyetujui <a href="ketentuan.html" target="_blank" rel="noopener" style="color:#93c5fd">Ketentuan Layanan</a> dan <a href="privasi.html" target="_blank" rel="noopener" style="color:#93c5fd">Kebijakan Privasi</a>.</div>
- <div class="row" style="justify-content:flex-start"><a class="btn sm yel" id="licBeli" href="https://lynk.id/alizaenal22/82o36qy070wr" target="_blank" rel="noopener">🛒 Info langganan</a><a class="btn sm gray" id="licWaAdmin" target="_blank" rel="noopener" style="display:none">💬 Hubungi admin</a></div>
+ <div class="row" style="justify-content:flex-start"><a class="btn sm yel" id="licBeli" href="https://wa.me/6287810215522?text=Halo%20admin%20Zentara%2C%20saya%20ingin%20berlangganan%20Mode%20Guru." target="_blank" rel="noopener">🛒 Info langganan</a><a class="btn sm gray" id="licWaAdmin" target="_blank" rel="noopener" style="display:none">💬 Hubungi admin</a></div>
 </div></div>
 
 <div class="ov" id="ovDtk"><div class="card" style="width:min(560px,100%)">
@@ -3304,7 +3304,7 @@ function kelasAct(a,b){
  return false}
 
 /* ---------- Lisensi guru ---------- */
-var LYNK_URL="https://lynk.id/alizaenal22/82o36qy070wr",ADMIN_WA="6282266268008";
+var LYNK_URL="https://wa.me/6287810215522?text="+encodeURIComponent("Halo admin Zentara, saya ingin berlangganan Mode Guru."),ADMIN_WA="6287810215522";
 var LS_LIC="zv_lic",LIC=lsGet(LS_LIC,null),DEV=lsGet("zv_dev",null),licStep=1,gkSynced=false;
 if(!DEV||!/^[a-f0-9]{32}$/.test(DEV)){DEV="";var ra=new Uint8Array(16);(window.crypto||{getRandomValues:function(a){for(var i=0;i<a.length;i++)a[i]=Math.floor(Math.random()*256);return a}}).getRandomValues(ra);for(var di=0;di<16;di++)DEV+=("0"+ra[di].toString(16)).slice(-2);lsSet("zv_dev",DEV)}
 function licBody(){if(PDP_ON&&PDP)return{pdp:PDP.token};if(!LIC)return null;return LIC.sess?{sess:LIC.sess,dev:DEV}:{kode:LIC.kode,dev:DEV}}

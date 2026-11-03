@@ -152,7 +152,7 @@ const setSetting = (k, v) => {
   db.prepare('INSERT INTO setelan (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v').run(k, String(v));
 };
 
-if (!getSetting('wa')) setSetting('wa', '6282266268008');
+if (!getSetting('wa')) setSetting('wa', '6287810215522');
 if (!getSetting('app_title')) setSetting('app_title', 'Zentara - Semesta Belajar 3D');
 
 function genCode(len = 6) {
@@ -307,8 +307,8 @@ const server = http.createServer((req, res) => {
 
     if (route === '/setelan' && req.method === 'GET') {
       return json({
-        wa: getSetting('wa', '6282266268008'),
-        beli: getSetting('beli', ''),
+        wa: getSetting('wa', '6287810215522'),
+        beli: getSetting('beli', 'https://wa.me/6287810215522?text=' + encodeURIComponent('Halo admin Zentara, saya ingin berlangganan Mode Guru.')),
         app_title: getSetting('app_title', 'Zentara')
       });
     }
@@ -468,8 +468,8 @@ const server = http.createServer((req, res) => {
           guru: guruData,
           bayar: [],
           setelan: {
-            wa: getSetting('wa', '6282266268008'),
-            beli: getSetting('beli', ''),
+            wa: getSetting('wa', '6287810215522'),
+            beli: getSetting('beli', 'https://wa.me/6287810215522?text=' + encodeURIComponent('Halo admin Zentara, saya ingin berlangganan Mode Guru.')),
             harga: 'Rp49.000 / tahun',
             info: 'Akses penuh seluruh fitur Mode Guru, pembuatan soal tanpa batas, dan kelas live multiplayer.'
           }
