@@ -167,13 +167,17 @@ function parseJSON(str, def = null) {
   try { return JSON.parse(str); } catch { return def; }
 }
 
+function toStr(v) {
+  return (v === null || v === undefined) ? '' : String(v).trim();
+}
+
 function getGuruByLic(lic) {
   if (!lic) return null;
-  const token = typeof lic === 'string' ? lic : (lic.sess || lic.token || '');
+  const token = typeof lic === 'string' ? lic : (lic.sess || lic.token || lic.kode || '');
   if (!token) return null;
   const s = db.prepare('SELECT guru_id FROM sesi WHERE token = ?').get(token);
-  if (!s) return null;
-  return db.prepare('SELECT * FROM guru WHERE id = ?').get(s.guru_id);
+  if (s) return db.prepare('SELECT * FROM guru WHERE id = ?').get(s.guru_id);
+  return db.prepare('SELECT * FROM guru WHERE email = ? COLLATE NOCASE').get(token);
 }
 
 function formatGuruResponse(guru) {
@@ -546,12 +550,25 @@ const server = http.createServer((req, res) => {
       });
     }
 
-    const kelasMatch = route.match(/^kelas\/([A-Za-z0-9]+)$/);
+    const kelasMatch = route.match(/^\/?kelas\/([A-Za-z0-9]+)$/);
     if (kelasMatch && req.method === 'GET') {
       const kd = kelasMatch[1].toUpperCase();
       const k = db.prepare('SELECT * FROM kelas WHERE kode = ?').get(kd);
       if (!k) return err('Kelas tidak ditemukan.', 404);
+      
+      const reqV = parsedUrl.searchParams.get('v');
+      if (reqV && String(reqV) === String(k.diubah)) {
+        return json({
+          sama: true,
+          kode: k.kode,
+          nama: k.nama,
+          guru: k.guru_nama,
+          diubah: k.diubah
+        });
+      }
+
       return json({
+        sama: false,
         kode: k.kode,
         nama: k.nama,
         guru: k.guru_nama,
@@ -662,9 +679,9 @@ const server = http.createServer((req, res) => {
 
     if (route === '/murid/masuk' && req.method === 'POST') {
       return readBody(body => {
-        const kd = (body.kode || '').trim().toUpperCase();
-        const nama = (body.nama || '').trim();
-        const absen = (body.absen || '').trim();
+        const kd = toStr(body.kode).toUpperCase();
+        const nama = toStr(body.nama);
+        const absen = toStr(body.absen);
 
         if (!kd) return err('Kode kelas harus diisi.');
         if (!nama) return err('Nama harus diisi.');
@@ -706,8 +723,8 @@ const server = http.createServer((req, res) => {
 
     if (route === '/catat' && req.method === 'POST') {
       return readBody(body => {
-        const token = body.token;
-        const kd = body.kode;
+        const token = toStr(body.token);
+        const kd = toStr(body.kode).toUpperCase();
         if (!token || !kd) return err('Token dan kode kelas diperlukan.');
 
         const m = db.prepare('SELECT * FROM murid WHERE token = ? AND kelas_kode = ?').get(token, kd);
@@ -831,7 +848,7 @@ const server = http.createServer((req, res) => {
       });
     }
 
-    const paketPublicMatch = route.match(/^paket\/([A-Za-z0-9]+)$/);
+    const paketPublicMatch = route.match(/^\/?paket\/([A-Za-z0-9]+)$/);
     if (paketPublicMatch && req.method === 'GET') {
       const kd = paketPublicMatch[1].toUpperCase();
       const p = db.prepare('SELECT * FROM paket WHERE kode = ?').get(kd);
@@ -1289,7 +1306,14 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+process.on('uncaughtException', (err) => {
+  console.error('[Zentara Error]', err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[Zentara Rejection]', err);
+});
+
+server.listen(PORT, () => {
   console.log(`[Zentara] Server aktif di http://localhost:${PORT}`);
   console.log(`[Zentara] Panel Admin di http://localhost:${PORT}/admin.html`);
 });
