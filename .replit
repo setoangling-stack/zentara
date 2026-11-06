@@ -1,0 +1,34 @@
+[build]
+channel = "stable"
+command = "npm install"
+
+[env]
+NODE_VERSION = "22"
+
+[nix]
+channel = "stable"
+
+[unitTest]
+language = "nodejs"
+
+[languages.javascript]
+pattern = "**/{*.js,*.jsx,*.ts,*.tsx}"
+
+[languages.javascript.languageServer]
+start = "typescript-language-server --stdio"
+
+[packager]
+language = "nodejs"
+ignorePatterns = ["node_modules", "database.sqlite", ".git"]
+
+[packager.features]
+packageSearch = true
+guessImports = true
+enableGuessImports = true
+
+[debugger]
+support = true
+
+[debugger.interactive]
+transport = "localhost:0"
+startCommand = ["dap-node", "--nolazy", "--inspect-brk=9229", "${DEBUG_ADAPTER_DIR}/out/src/debugAdapter.js"]
